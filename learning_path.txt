@@ -1,0 +1,19 @@
+Next core path:
+
+Revision + doubt clearing
+PostgreSQL
+Alembic / database migrations
+Finish testing
+Error handling
+Pagination / filtering / sorting
+Configuration + .env
+Logging
+Middleware / CORS
+Async fundamentals
+Docker
+Deployment
+CI/CD
+Redis / caching
+Background job systems
+Performance / scalability
+Advanced backend architecture
