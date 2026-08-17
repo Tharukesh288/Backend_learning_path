@@ -19,7 +19,8 @@ class Book(Base):
     title = Column(String, nullable = False)
     pages = Column(Integer, nullable = False)
     price = Column(Float, nullable = False)
-
+    description = Column(String, nullable=True)
+    
     author_id = Column(Integer,ForeignKey("author.id"))         # Connect this book to an author
 
     author = relationship("Author",back_populates="books")      # Connect Python object to Author object
