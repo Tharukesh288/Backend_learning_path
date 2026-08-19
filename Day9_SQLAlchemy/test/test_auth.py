@@ -1,112 +1,49 @@
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 import pytest
 
 from main import app
-from database import Base, get_db
 from model import User
 from security import hash_password
 
 
-# --------------------------------------------------
-# Test client
-# --------------------------------------------------
+# ============================================================
+# Test Client
+# ============================================================
 
 client = TestClient(app)
 
 
-# --------------------------------------------------
-# Test database
-# --------------------------------------------------
-
-TEST_DATABASE_URL = "sqlite:///test_book.db"
-
-test_engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
-
-TestingSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=test_engine
-)
-
-
-# --------------------------------------------------
-# Clean database before every test
-# --------------------------------------------------
-
-@pytest.fixture(autouse=True)
-def clean_database():
-
-    # Remove old test data
-    Base.metadata.drop_all(bind=test_engine)
-
-    # Recreate tables
-    Base.metadata.create_all(bind=test_engine)
-
-
-# --------------------------------------------------
-# Replace FastAPI's real database with test database
-# --------------------------------------------------
-
-def override_get_db():
-
-    db = TestingSessionLocal()
-
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-
-# --------------------------------------------------
-# Create test users
-# --------------------------------------------------
+# ============================================================
+# Test Fixtures
+# ============================================================
 
 @pytest.fixture
-def create_test_users():
+def create_test_users(db):
+    """Create a normal user and an admin user for authentication tests."""
 
-    db = TestingSessionLocal()
-
-    # Normal user
     normal_user = User(
         username="testuser",
         password_hash=hash_password("password123"),
         role="user"
     )
 
-    # Admin user
     admin_user = User(
         username="adminuser",
         password_hash=hash_password("admin123"),
         role="admin"
     )
 
-    # Add both users
-    db.add(normal_user)
-    db.add(admin_user)
-
-    # Save them
+    db.add_all([normal_user, admin_user])
     db.commit()
 
-    # Close database session
-    db.close()
 
-
-# ==================================================
+# ============================================================
 # Authentication Tests
-# ==================================================
-
+# ============================================================
 
 def test_login_success(create_test_users):
+    """Valid credentials should return a JWT access token."""
 
-    # Send correct username and password
     response = client.post(
         "/users/login",
         json={
@@ -115,22 +52,17 @@ def test_login_success(create_test_users):
         }
     )
 
-    # Login should succeed
     assert response.status_code == 200
 
-    # Get response JSON
     data = response.json()
 
-    # JWT should be returned
     assert "access_token" in data
-
-    # Token type should be bearer
     assert data["token_type"] == "bearer"
 
 
 def test_login_wrong_password(create_test_users):
+    """Incorrect password should be rejected."""
 
-    # Use a real username but wrong password
     response = client.post(
         "/users/login",
         json={
@@ -139,22 +71,33 @@ def test_login_wrong_password(create_test_users):
         }
     )
 
-    # Wrong credentials must be rejected
     assert response.status_code == 401
 
 
-def test_get_me_without_token():
+def test_login_missing_password():
+    """Missing required login fields should return validation error."""
 
-    # No Authorization header
+    response = client.post(
+        "/users/login",
+        json={
+            "username": "testuser"
+        }
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_me_without_token():
+    """Protected endpoint should reject requests without a token."""
+
     response = client.get("/users/me")
 
-    # Authentication is required
     assert response.status_code == 401
 
 
 def test_get_me_invalid_token():
+    """Protected endpoint should reject an invalid JWT."""
 
-    # Send a fake JWT
     response = client.get(
         "/users/me",
         headers={
@@ -162,18 +105,16 @@ def test_get_me_invalid_token():
         }
     )
 
-    # Invalid token must be rejected
     assert response.status_code == 401
 
 
-# ==================================================
+# ============================================================
 # Authorization Tests
-# ==================================================
-
+# ============================================================
 
 def test_normal_user_admin_access(create_test_users):
+    """Authenticated normal users should not access admin endpoints."""
 
-    # Login as normal user
     login_response = client.post(
         "/users/login",
         json={
@@ -182,13 +123,10 @@ def test_normal_user_admin_access(create_test_users):
         }
     )
 
-    # Login should succeed
     assert login_response.status_code == 200
 
-    # Extract JWT
     token = login_response.json()["access_token"]
 
-    # Try to access admin-only endpoint
     response = client.get(
         "/users/admin",
         headers={
@@ -196,14 +134,13 @@ def test_normal_user_admin_access(create_test_users):
         }
     )
 
-    # Normal user is authenticated
-    # but not authorized
+    # User is authenticated but does not have admin permission.
     assert response.status_code == 403
 
 
 def test_admin_access(create_test_users):
+    """Authenticated admin users should access admin endpoints."""
 
-    # Login as admin
     login_response = client.post(
         "/users/login",
         json={
@@ -212,13 +149,10 @@ def test_admin_access(create_test_users):
         }
     )
 
-    # Login should succeed
     assert login_response.status_code == 200
 
-    # Extract JWT
     token = login_response.json()["access_token"]
 
-    # Access admin-only endpoint
     response = client.get(
         "/users/admin",
         headers={
@@ -226,8 +160,5 @@ def test_admin_access(create_test_users):
         }
     )
 
-    # Admin should be allowed
     assert response.status_code == 200
-
-    # Check response message
     assert response.json()["message"] == "Welcome Admin"

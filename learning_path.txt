@@ -3,7 +3,7 @@ Next core path:
 Revision + doubt clearing
 PostgreSQL
 Alembic / database migrations
-Finish testing
+Finish testingq
 Error handling
 Pagination / filtering / sorting
 Configuration + .env
@@ -17,3 +17,7 @@ Redis / caching
 Background job systems
 Performance / scalability
 Advanced backend architecture
+
+
+
+

@@ -4,6 +4,7 @@ from database import get_db
 from model import Book,User
 import schemas
 import crud
+from exceptions import BookNotFoundException
 
 # Creates a router specifically for book-related endpoints
 router = APIRouter(prefix="/books",tags=["Books"])
@@ -30,10 +31,8 @@ def get_single_book(book_id:int,db:Session=Depends(get_db)):
     book = crud.get_book(db,book_id)
 
     if book is None:
-        raise HTTPException(
-            status_code=404,
-            detail="There is no Book like that shit head"
-        )
+        raise BookNotFoundException()
+
     return book
 
 @router.put("/{book_id}",response_model=schemas.BookResponse)

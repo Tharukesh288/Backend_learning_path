@@ -24,7 +24,7 @@ def register_user(
         db,
         user.username
     )
-
+                 
     if existing_user:
         raise HTTPException(
             status_code=400,

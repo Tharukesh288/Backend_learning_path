@@ -1,5 +1,7 @@
 from fastapi import FastAPI,HTTPException, Depends, Request             # Import FastAPI to create our web application
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
+from exceptions import BookNotFoundException,AppException
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from jose import jwt, JWTError
@@ -18,7 +20,21 @@ from security import hash_password, verify_password, create_access_token, SECRET
 
 app = FastAPI()                         # Create the FastAPI application
 
-Base.metadata.create_all(bind=engine)  # Create all database tables that inherit from Base (only if they don't already exist)
+@app.exception_handler(AppException)
+async def app_exception_handler(
+    request: Request,
+    exc: AppException
+):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.error,
+            "message": exc.message,
+            "status_code": exc.status_code
+        }
+    )
+
+Base.metadata.create_all(bind=engine)   # Create all database tables that inherit from Base (only if they don't already exist)
     # Base.metadata contains information about all ORM models.
     # create_all() checks if the tables exist.
     # If they don't exist, SQLAlchemy creates them.
