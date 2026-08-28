@@ -14,10 +14,15 @@ def write_log(message:str):
         file.write(message + "\n")
 
 @router.get("/")
-def get_books(db:Session = Depends(get_db)):
-    books = db.query(Book).all()
-
-    return books
+def get_all_books(
+    skip: int = 0,
+    limit: int = 10,
+    author_id: int | None = None,
+    sort_by: str = "id",
+    order: str = "asc",
+    db: Session = Depends(get_db)
+):
+    return crud.get_all_book(db, skip, limit,author_id,sort_by,order)
 
 @router.post("/",response_model=schemas.BookResponse)
 def add_book(book:schemas.BookCreate, background_tasks:BackgroundTasks, db:Session=Depends(get_db)):

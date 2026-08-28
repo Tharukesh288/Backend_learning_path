@@ -1,7 +1,7 @@
 import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta, timezone
-from config import SECRET_KEY, ALGORITHM
+from config import settings
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -53,7 +53,7 @@ def create_access_token(data:dict,expires_delta:timedelta):
     #     "exp": expiration_time
     # }
 
-    encoded_jwt = jwt.encode(to_encode,SECRET_KEY,algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode,settings.SECRET_KEY,algorithm=settings.ALGORITHM)
 
     # Create the actual JWT
     # to_encode → information inside the token
@@ -74,8 +74,8 @@ def get_current_user(
         # Decode and verify the JWT
         payload = jwt.decode(
             token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
         )
 
         # Get user ID from token

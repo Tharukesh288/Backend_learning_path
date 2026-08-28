@@ -1,6 +1,7 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from exceptions import UserAlreadyExistsException
 
 import schemas
 import crud
@@ -26,10 +27,7 @@ def register_user(
     )
                  
     if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Username already exists"
-        )
+        raise UserAlreadyExistsException()
 
     # Convert plain password into a secure hash
     password_hash = hash_password(user.password)

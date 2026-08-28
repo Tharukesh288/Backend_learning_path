@@ -1,8 +1,14 @@
-from dotenv import load_dotenv
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY")        # Secret key used to sign the JWT
-ALGORITHM = os.getenv("ALGORITHM")          # Algorithm used to sign the JWT
+class Settings(BaseSettings):
+    SECRET_KEY: str
+    ALGORITHM: str
+    DATABASE_URL: str
 
+    model_config = SettingsConfigDict(
+        env_file=".env"
+    )
+
+
+settings = Settings()

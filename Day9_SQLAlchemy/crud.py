@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session              # A Session is used to communicate with the database.
 from model import Book, Author, User                  # Import our ORM model.
 from schemas import BookCreate, AuthorCreate    
+from sqlalchemy.exc import IntegrityError
 # Import the schema used for creating books.
 def create_book(db:Session,book:BookCreate):    # Function to insert a new book into the database.
     # Make sure the author exists
@@ -21,11 +22,32 @@ def create_book(db:Session,book:BookCreate):    # Function to insert a new book 
     db.refresh(new_book)                        # Reload the object from the database.
     return new_book
 
-def get_all_book(db:Session):
-    
-    books = db.query(Book).all()                 # Get all books from the database
+def get_all_book(
+    db: Session,
+    skip: int = 0,
+    limit: int = 10,
+    author_id: int | None = None,
+    sort_by: str = "id",
+    order: str = "asc"
+):
+    query = db.query(Book)
 
-    return books 
+    if author_id is not None:
+        query = query.filter(Book.author_id == author_id)
+
+    if sort_by == "title":
+        column = Book.title
+    elif sort_by == "price":
+        column = Book.price
+    else:
+        column = Book.id
+
+    if order == "desc":
+        query = query.order_by(column.desc())
+    else:
+        query = query.order_by(column.asc())
+
+    return query.offset(skip).limit(limit).all()
 
 def get_book(db:Session,book_id:int):
     book = db.query(Book).filter(Book.id == book_id).first()
@@ -81,9 +103,12 @@ def get_user_by_username(db:Session,username:str):
 def create_user(db:Session,username:str,password_hash:str):
     new_user =  User(username=username,password_hash=password_hash)
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return new_user
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except IntegrityError:
+        db.rollback()
+        raise
 

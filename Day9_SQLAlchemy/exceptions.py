@@ -17,3 +17,11 @@ class BookNotFoundException(AppException):
             message=message,
             status_code=404
         )
+
+class UserAlreadyExistsException(AppException):
+    def __init__(self, message="Username already exists"):
+        super().__init__(
+            error="USER_ALREADY_EXISTS",
+            message=message,
+            status_code=409
+        )

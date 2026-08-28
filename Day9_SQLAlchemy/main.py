@@ -1,11 +1,13 @@
 from fastapi import FastAPI,HTTPException, Depends, Request             # Import FastAPI to create our web application
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from exceptions import BookNotFoundException,AppException
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from jose import jwt, JWTError
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import IntegrityError
 import time 
 
 from routers.user import router as user_router
@@ -16,7 +18,8 @@ from crud import create_book, get_all_book, get_book, update_book, delete_book,c
 import crud
 from database import Base, engine, get_db    # Import the database engine and Base class
 from model import Book,User                 # Import the Book model so SQLAlchemy knows this table exists
-from security import hash_password, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from security import hash_password, verify_password, create_access_token
+from config import settings
 
 app = FastAPI()                         # Create the FastAPI application
 
@@ -117,7 +120,7 @@ def get_current_token(token:str = Depends(oauth2_scheme)):
 def get_current_token(token:str=Depends(oauth2_scheme)):
 
     try:
-        payload=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        payload=jwt.decode(token,settings.SECRET_KEY,algorithms=[settings.ALGORITHM])
             # Decode the JWT
             #
             # token → JWT received from the client
@@ -219,3 +222,53 @@ async def log_requests(request:Request,call_next):
 
     return response
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError
+):
+    errors = []
+
+    for error in exc.errors():
+        errors.append({
+            "field": error["loc"][-1],
+            "message": error["msg"]
+        })
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": "VALIDATION_ERROR",
+            "message": "Invalid request data",
+            "status_code": 422,
+            "details": errors
+        }
+    )
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(
+    request: Request,
+    exc: IntegrityError
+):
+    return JSONResponse(
+        status_code=409,
+        content={
+            "error": "DATABASE_CONFLICT",
+            "message": "The request conflicts with existing data",
+            "status_code": 409
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(
+    request: Request,
+    exc: Exception
+):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "INTERNAL_SERVER_ERROR",
+            "message": "An unexpected error occurred",
+            "status_code": 500
+        }
+    )

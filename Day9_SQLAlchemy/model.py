@@ -10,7 +10,7 @@ class Author(Base):
 
     books = relationship("Book",back_populates="author")        # One author can have many books
 
-
+ 
 
 class Book(Base):
     __tablename__ = "books"                                     # tells SQLAlchemy the SQL table name
