@@ -108,7 +108,7 @@ def login_user(
         "token_type": "bearer"
     }
 
-def get_current_token(token:str = Depends(oauth2_scheme)):
+def FF(token:str = Depends(oauth2_scheme)):
     # FastAPI calls oauth2_scheme()
     # to extract the JWT from:
     #
@@ -216,9 +216,10 @@ async def log_requests(request:Request,call_next):
     process_time = time.time() - start_time
 
     print(
-        f"{request.method} {request.url.path}"
-        f"completed in {process_time:4f}s"
-    )
+    f"{request.method} {request.url.path} "
+    f"→ {response.status_code} "
+    f"completed in {process_time:.4f}s"
+)
 
     return response
 
