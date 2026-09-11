@@ -145,7 +145,7 @@ def delete_book_endpoint(book_id: int, db: Session = Depends(get_db)):
         )
 
     # Log successful deletion
-    logger.info(f"Book deleted successfully: {book.title}")
+    logger.info(f"Book deleted successfully: ID {book_id}")
 
     # Return a success response
     return {
