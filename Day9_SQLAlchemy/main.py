@@ -16,7 +16,7 @@ from routers.user import router as users_router
 from schemas import BookCreate, BookResponse, AuthorCreate, AuthorResponse,BookSimpleResponse, AuthorWithBookResponse, UserCreate
 from crud import create_book, get_all_book, get_book, update_book, delete_book,create_author, get_author
 import crud
-from database import Base, engine, get_db    # Import the database engine and Base class
+from database import get_db    # Import the database session dependency
 from model import Book,User                 # Import the Book model so SQLAlchemy knows this table exists
 from security import hash_password, verify_password, create_access_token
 from config import settings
@@ -37,11 +37,16 @@ async def app_exception_handler(
         }
     )
 
-Base.metadata.create_all(bind=engine)   # Create all database tables that inherit from Base (only if they don't already exist)
+# Base.metadata.create_all(bind=engine)   # Create all database tables that inherit from Base (only if they don't already exist)
     # Base.metadata contains information about all ORM models.
     # create_all() checks if the tables exist.
     # If they don't exist, SQLAlchemy creates them.
     # If they already exist, nothing happens.
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 @app.post("/register")
@@ -114,7 +119,7 @@ def FF(token:str = Depends(oauth2_scheme)):
     #
     # Authorization: Bearer <JWT>
     #
-    # The extracted JWT is stored in `token`
+    # The extracted token is stored in `token`
     return token
 
 def get_current_token(token:str=Depends(oauth2_scheme)):
@@ -273,3 +278,4 @@ async def general_exception_handler(
             "status_code": 500
         }
     )
+
