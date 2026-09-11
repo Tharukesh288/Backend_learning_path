@@ -5,18 +5,24 @@ from sqlalchemy.orm import sessionmaker
 
 from database import Base, get_db
 from main import app
-
+import os
 
 # ============================================================
 # Test Database
 # ============================================================
 
-TEST_DATABASE_URL = "sqlite:///test_book.db"
-
-test_engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "sqlite:///test_book.db"
 )
+
+if TEST_DATABASE_URL.startswith("sqlite"):
+    test_engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
+else:
+    test_engine = create_engine(TEST_DATABASE_URL)
 
 TestingSessionLocal = sessionmaker(
     autocommit=False,
