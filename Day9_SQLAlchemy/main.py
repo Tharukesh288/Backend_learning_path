@@ -189,10 +189,7 @@ def required_admin(current_user:User=Depends(get_current_user)):
 
 import os
 
-allowed_origins = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:3000"
-).split(",")
+allowed_origins = settings.ALLOWED_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
